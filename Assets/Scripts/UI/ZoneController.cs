@@ -9,7 +9,15 @@ public class ZoneController : MonoBehaviour, IPointerDownHandler, IPointerUpHand
     
     [SerializeField] private Color zoneColor;
     
-    [SerializeField] private Vector2 minSize = new Vector2(50, 50);
+    // Физические размеры в метрах
+    [SerializeField] private readonly Vector2 minPhysicalSize = new Vector2(0.5f, 0.5f);
+    
+    // Физические размеры и положение зоны в метрах
+    [SerializeField] private Vector2 physicalSize;
+    [SerializeField] private Vector2 physicalPosition;
+    
+    // Коэффициент масштабирования (пиксели на метр)
+    private float scaleFactor = 1f; // По умолчанию 100 пикселей на метр
     
     private WarehouseManager warehouseManager;
     
@@ -57,6 +65,64 @@ public class ZoneController : MonoBehaviour, IPointerDownHandler, IPointerUpHand
             textRect.offsetMin = Vector2.zero;
             textRect.offsetMax = Vector2.zero;
         }
+        
+        // Обновить отображение с учетом физических размеров
+        // UpdateDisplay();
+    }
+    
+    // Новый метод для обновления масштаба отображения
+    public void UpdateScale(float pixelToMeterScale)
+    {
+        scaleFactor = pixelToMeterScale;
+        ValidatePosition();
+    }
+    
+    // Метод для обновления визуального отображения на основе физических размеров
+    private void UpdateDisplay()
+    {
+        // Преобразуем физические размеры в пиксели для отображения
+        rectTransform.sizeDelta = new Vector2(
+            physicalSize.x * scaleFactor,
+            physicalSize.y * scaleFactor
+        );
+        
+        rectTransform.anchoredPosition = new Vector2(
+            physicalPosition.x * scaleFactor,
+            physicalPosition.y * scaleFactor
+        );
+    }
+
+    public void SetPhysicalSize(Vector2 size)
+    {
+        physicalSize = size;
+        Debug.Log(physicalSize);
+        ValidatePosition();
+    }
+
+    public void SetPhysicalPosition(Vector2 position)
+    {
+        physicalPosition = position;
+        ValidatePosition();
+    }
+    
+    // Получение физических размеров зоны
+    public Vector2 GetPhysicalSize()
+    {
+        return physicalSize;
+    }
+    
+    // Получение физической позиции зоны
+    public Vector2 GetPhysicalPosition()
+    {
+        return physicalPosition;
+    }
+    
+    // Установка физических размеров и позиции
+    public void SetPhysicalProperties(Vector2 position, Vector2 size)
+    {
+        physicalPosition = position;
+        physicalSize = size;
+        UpdateDisplay();
     }
     
     public void SetColor(Color color)
@@ -76,7 +142,7 @@ public class ZoneController : MonoBehaviour, IPointerDownHandler, IPointerUpHand
         RectTransformUtility.ScreenPointToLocalPointInRectangle(
             rectTransform, eventData.position, eventData.pressEventCamera, out localPointerPosition);
         
-        float edgeThreshold = 20f;
+        float edgeThreshold = 10f;
         bool nearRightEdge = localPointerPosition.x > rectTransform.rect.width - edgeThreshold;
         bool nearLeftEdge = localPointerPosition.x < edgeThreshold;
         bool nearTopEdge = localPointerPosition.y > rectTransform.rect.height - edgeThreshold;
@@ -105,56 +171,75 @@ public class ZoneController : MonoBehaviour, IPointerDownHandler, IPointerUpHand
         isResizing = false;
     }
     
-public void OnDrag(PointerEventData eventData)
-{
-    if (isDragging)
+    public void OnDrag(PointerEventData eventData)
     {
-        Vector2 delta = eventData.position - lastPointerPosition;
-        rectTransform.anchoredPosition += delta;
-        ValidatePosition();
-    }
-    else if (isResizing)
-    {
-        Vector2 delta = eventData.position - lastPointerPosition;
-        Vector2 newSize = rectTransform.sizeDelta;
-        Vector2 newPosition = rectTransform.anchoredPosition;
-        
-        if (resizeDirection.x > 0)
+        if (isDragging)
         {
-            newSize.x += delta.x;
-        }
-        else if (resizeDirection.x < 0)
-        {
-            float width = newSize.x - delta.x;
-            if (width >= minSize.x) {
-                newSize.x = width;
-                newPosition.x += delta.x;
-            }
-        }
-        
-        if (resizeDirection.y > 0)
-        {
-            newSize.y += delta.y;
-        }
-        else if (resizeDirection.y < 0)
-        {
-            float height = newSize.y - delta.y;
-            if (height >= minSize.y) {
-                newSize.y = height;
-                newPosition.y += delta.y;
-            }
-        }
-        
-        if (newSize.x >= minSize.x && newSize.y >= minSize.y)
-        {
-            rectTransform.sizeDelta = newSize;
-            rectTransform.anchoredPosition = newPosition;
+            Vector2 delta = eventData.position - lastPointerPosition;
+            
+            // Конвертируем дельту пикселей в физические единицы
+            Vector2 physicalDelta = new Vector2(
+                delta.x / scaleFactor,
+                delta.y / scaleFactor
+            );
+            
+            // Обновляем физическое положение
+            physicalPosition += physicalDelta;
+            
+            // Обновляем визуальное отображение и проверяем границы
             ValidatePosition();
         }
+        else if (isResizing)
+        {
+            Vector2 delta = eventData.position - lastPointerPosition;
+            
+            // Конвертируем дельту пикселей в физические единицы
+            Vector2 physicalDelta = new Vector2(
+                delta.x / scaleFactor,
+                delta.y / scaleFactor
+            );
+            
+            Vector2 newPhysicalSize = physicalSize;
+            Vector2 newPhysicalPosition = physicalPosition;
+            
+            if (resizeDirection.x > 0)
+            {
+                newPhysicalSize.x += physicalDelta.x;
+            }
+            else if (resizeDirection.x < 0)
+            {
+                float width = newPhysicalSize.x - physicalDelta.x;
+                if (width >= minPhysicalSize.x) {
+                    newPhysicalSize.x = width;
+                    newPhysicalPosition.x += physicalDelta.x;
+                }
+            }
+            
+            if (resizeDirection.y > 0)
+            {
+                newPhysicalSize.y += physicalDelta.y;
+            }
+            else if (resizeDirection.y < 0)
+            {
+                float height = newPhysicalSize.y - physicalDelta.y;
+                if (height >= minPhysicalSize.y) {
+                    newPhysicalSize.y = height;
+                    newPhysicalPosition.y += physicalDelta.y;
+                }
+            }
+            
+            if (newPhysicalSize.x >= minPhysicalSize.x && newPhysicalSize.y >= minPhysicalSize.y)
+            {
+                physicalSize = newPhysicalSize;
+                physicalPosition = newPhysicalPosition;
+                
+                // Обновляем визуальное отображение и проверяем границы
+                ValidatePosition();
+            }
+        }
+        
+        lastPointerPosition = eventData.position;
     }
-    
-    lastPointerPosition = eventData.position;
-}
     
     public void ValidatePosition()
     {
@@ -164,33 +249,32 @@ public void OnDrag(PointerEventData eventData)
             if (warehouseManager == null) return;
         }
         
-        RectTransform warehouseRect = warehouseManager.GetWarehouseRect();
-        if (warehouseRect == null) return;
+        Vector2 warehousePhysicalSize =  warehouseManager.GetPhysicalSize();
         
-        Vector2 localPosition = rectTransform.anchoredPosition;
-        Vector2 zoneSize = rectTransform.sizeDelta;
+        // // Валидация физических размеров
+        physicalSize.x = Mathf.Abs(physicalSize.x);
+        physicalSize.y = Mathf.Abs(physicalSize.y);
         
-        zoneSize.x = Mathf.Abs(zoneSize.x);
-        zoneSize.y = Mathf.Abs(zoneSize.y);
+        if (physicalSize.x < minPhysicalSize.x)
+        {
+            physicalSize.x = minPhysicalSize.x;
+        } 
+        if (physicalSize.y < minPhysicalSize.y) physicalSize.y = minPhysicalSize.y;
         
-        if (zoneSize.x < minSize.x) zoneSize.x = minSize.x;
-        if (zoneSize.y < minSize.y) zoneSize.y = minSize.y;
+        if (physicalSize.x > warehousePhysicalSize.x) physicalSize.x = warehousePhysicalSize.x;
+        if (physicalSize.y > warehousePhysicalSize.y) physicalSize.y = warehousePhysicalSize.y;
         
-        Vector2 warehouseSize = warehouseRect.rect.size;
+        // Валидация физической позиции
+        if (physicalPosition.x < 0) physicalPosition.x = 0;
+        if (physicalPosition.y < 0) physicalPosition.y = 0;
         
-        if (zoneSize.x > warehouseSize.x) zoneSize.x = warehouseSize.x;
-        if (zoneSize.y > warehouseSize.y) zoneSize.y = warehouseSize.y;
+        if (physicalPosition.x + physicalSize.x > warehousePhysicalSize.x)
+            physicalPosition.x = warehousePhysicalSize.x - physicalSize.x;
         
-        if (localPosition.x < 0) localPosition.x = 0;
-        if (localPosition.y < 0) localPosition.y = 0;
+        if (physicalPosition.y + physicalSize.y > warehousePhysicalSize.y)
+            physicalPosition.y = warehousePhysicalSize.y - physicalSize.y;
         
-        if (localPosition.x + zoneSize.x > warehouseSize.x)
-            localPosition.x = warehouseSize.x - zoneSize.x;
-        
-        if (localPosition.y + zoneSize.y > warehouseSize.y)
-            localPosition.y = warehouseSize.y - zoneSize.y;
-        
-        rectTransform.sizeDelta = zoneSize;
-        rectTransform.anchoredPosition = localPosition;
+        // Обновляем визуальное отображение
+        UpdateDisplay();
     }
 }

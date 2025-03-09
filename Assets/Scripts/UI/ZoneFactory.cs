@@ -15,22 +15,24 @@ public class ZoneFactory : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     {
         public string name;
         public Color color;
-        public Vector2 initialSize;
-        public Vector2 initialPosition;
+        public Vector2 physicalSize;
+        public Vector2 physicalPosition;
     }
 
-    [Header("Определения зон склада")]
-    [SerializeField]
+    // [Header("Определения зон склада")]
+    // [SerializeField]
     private ZoneDefinition[] zoneDefinitions = new ZoneDefinition[]
     {
-        new ZoneDefinition { name = "Зона стоянки/зарядки", color = Color.yellow, initialSize = new Vector2(150, 120), initialPosition = new Vector2(100, 100) },
-        new ZoneDefinition { name = "Зона погрузки/разгрузки", color = Color.red, initialSize = new Vector2(200, 100), initialPosition = new Vector2(300, 100) },
-        new ZoneDefinition { name = "Зона складирования", color = Color.blue, initialSize = new Vector2(250, 200), initialPosition = new Vector2(200, 250) },
-        new ZoneDefinition { name = "Офис управления", color = new Color(0.2f, 0.8f, 0.2f), initialSize = new Vector2(100, 100), initialPosition = new Vector2(400, 300) }
+        new ZoneDefinition { name = "Зона стоянки/зарядки", color = Color.yellow, physicalSize = new Vector2(10.0f, 10.0f), physicalPosition = new Vector2(10, 10) },
+        new ZoneDefinition { name = "Зона погрузки/разгрузки", color = Color.red, physicalSize = new Vector2(10.0f, 10.0f), physicalPosition = new Vector2(30, 10) },
+        new ZoneDefinition { name = "Зона складирования", color = Color.blue, physicalSize = new Vector2(25.0f, 20.0f), physicalPosition = new Vector2(20, 25) },
+        new ZoneDefinition { name = "Офис управления", color = new Color(0.2f, 0.8f, 0.2f), physicalSize = new Vector2(7.0f, 15.0f), physicalPosition = new Vector2(40, 30) }
     };
 
     // Список для хранения RectTransform созданных зон для проверки позиции курсора
-    private List<RectTransform> zoneRects = new List<RectTransform>();
+
+    public LinkedList<RectTransform> ZoneRects { get => zoneRects; }
+    private LinkedList<RectTransform> zoneRects = new LinkedList<RectTransform>();
 
     // Параметры для работы с курсором (набор текстур и пороговое значение)
     [Header("Курсоры")]
@@ -42,36 +44,16 @@ public class ZoneFactory : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     [SerializeField] private Texture2D moveCursor;
     [SerializeField] private float edgeThreshold = 20f;
 
-    // Переменные для управления событиями указателя
     private bool isOver = false;
-    // RectTransform текущего объекта, на котором висит данный компонент (используется для событий указателя)
-    private RectTransform rectTransform;
 
     private Texture2D lastCursor;
+    private Vector2 lastOffset;
 
     private void Awake()
     {
         // Если warehouseRect не задан в инспекторе, получаем его из текущего объекта
         if (warehouseRect == null)
-        {
             warehouseRect = GetComponent<RectTransform>();
-        }
-        rectTransform = GetComponent<RectTransform>();
-
-        // Инициализация текстур курсоров, если они не назначены через инспектор
-        // if (defaultCursor == null)
-        //     defaultCursor = ResizeTexture()
-        
-        if (resizeHorizontalCursor == null)
-            resizeHorizontalCursor = Resources.Load<Texture2D>("Cursors/resize_horizontal");
-        if (resizeVerticalCursor == null)
-            resizeVerticalCursor = Resources.Load<Texture2D>("Cursors/resize_vertical");
-        if (resizeDiagonalCursorLeft == null)
-            resizeDiagonalCursorLeft = Resources.Load<Texture2D>("Cursors/resize_diagonal");
-        if (resizeDiagonalCursorRight == null)
-            resizeDiagonalCursorRight = Resources.Load<Texture2D>("Cursors/resize_diagonal");
-        if (moveCursor == null)
-            moveCursor = Resources.Load<Texture2D>("Cursors/move");
     }
 
     private void Start()
@@ -92,14 +74,14 @@ public class ZoneFactory : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
 
         foreach (ZoneDefinition definition in zoneDefinitions)
         {
-            CreateZone(definition.name, definition.initialPosition, definition.initialSize, definition.color);
+            CreateZone(definition.name, definition.physicalPosition, definition.physicalSize, definition.color);
         }
     }
 
     /// <summary>
     /// Создаёт отдельную зону, задаёт ей позицию, размеры и цвет, а также регистрирует её для проверки курсора.
     /// </summary>
-    public GameObject CreateZone(string name, Vector2 position, Vector2 size, Color color)
+    public GameObject CreateZone(string name, Vector2 physPosition, Vector2 physSize, Color color)
     {
         GameObject zoneObject = Instantiate(zonePrefab, warehouseRect);
         zoneObject.name = name;
@@ -107,21 +89,12 @@ public class ZoneFactory : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
         RectTransform zoneRect = zoneObject.GetComponent<RectTransform>();
         if (zoneRect != null)
         {
-            // Обеспечиваем положительность размеров
-            size.x = Mathf.Abs(size.x);
-            size.y = Mathf.Abs(size.y);
-
-            // Минимальные размеры
-            if (size.x < 50) size.x = 50;
-            if (size.y < 50) size.y = 50;
-
-            zoneRect.sizeDelta = size;
-            zoneRect.anchoredPosition = position;
+            zoneRect.sizeDelta = physSize;
+            zoneRect.anchoredPosition = physPosition;
             zoneRect.anchorMin = new Vector2(0, 0);
             zoneRect.anchorMax = new Vector2(0, 0);
             zoneRect.pivot = new Vector2(0, 0);
 
-            // Регистрируем зону для последующей проверки положения курсора
             RegisterZone(zoneRect);
         }
 
@@ -130,12 +103,17 @@ public class ZoneFactory : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
         if (controller != null)
         {
             controller.zoneName = name;
+            Debug.Log(physSize);
+            controller.SetPhysicalSize(physSize);
+            controller.SetPhysicalPosition(physPosition);
             controller.SetColor(color);
         }
         else
         {
             controller = zoneObject.AddComponent<ZoneController>();
             controller.zoneName = name;
+            controller.SetPhysicalSize(physSize);
+            controller.SetPhysicalPosition(physPosition);
             controller.SetColor(color);
         }
         controller.ValidatePosition();
@@ -149,7 +127,7 @@ public class ZoneFactory : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     public void RegisterZone(RectTransform zoneRect)
     {
         if (zoneRect != null && !zoneRects.Contains(zoneRect))
-            zoneRects.Add(zoneRect);
+            zoneRects.AddFirst(zoneRect);
     }
 
     // Обработчики событий указателя
@@ -184,8 +162,7 @@ public class ZoneFactory : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
         bool customCursorSet = false;
         if (Input.GetMouseButton(0) && lastCursor != null)
         {
-            Cursor.SetCursor(lastCursor, new Vector2(16, 16), CursorMode.Auto);
-            customCursorSet = true;
+            Cursor.SetCursor(lastCursor, lastOffset, CursorMode.Auto);
             return;
         }
         else
@@ -217,17 +194,35 @@ public class ZoneFactory : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
                         customCursorSet = true;
                         break;
                     }
-                    else if (nearRightEdge || nearLeftEdge)
+                    else if (nearLeftEdge)
                     {
-                        Cursor.SetCursor(resizeHorizontalCursor, new Vector2(16, 16), CursorMode.Auto);
+                        Cursor.SetCursor(resizeHorizontalCursor, new Vector2(48, 16), CursorMode.Auto);
                         lastCursor = resizeHorizontalCursor;
+                        lastOffset = new Vector2(48, 16);
                         customCursorSet = true;
                         break;
                     }
-                    else if (nearTopEdge || nearBottomEdge)
+                    else if (nearRightEdge)
+                    {
+                        Cursor.SetCursor(resizeHorizontalCursor, new Vector2(16, 16), CursorMode.Auto);
+                        lastCursor = resizeHorizontalCursor;
+                        lastOffset = new Vector2(16, 16);
+                        customCursorSet = true;
+                        break;
+                    }
+                    else if (nearTopEdge)
+                    {
+                        Cursor.SetCursor(resizeVerticalCursor, new Vector2(16, 48), CursorMode.Auto);
+                        lastCursor = resizeVerticalCursor;
+                        lastOffset = new Vector2(16, 48);
+                        customCursorSet = true;
+                        break;
+                    }
+                    else if (nearBottomEdge)
                     {
                         Cursor.SetCursor(resizeVerticalCursor, new Vector2(16, 16), CursorMode.Auto);
                         lastCursor = resizeVerticalCursor;
+                        lastOffset = new Vector2(16, 16);
                         customCursorSet = true;
                         break;
                     }
@@ -235,6 +230,7 @@ public class ZoneFactory : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
                     {
                         Cursor.SetCursor(moveCursor, new Vector2(16, 16), CursorMode.Auto);
                         lastCursor = moveCursor;
+                        lastOffset = new Vector2(16, 16);
                         customCursorSet = true;
                         break;
                     }

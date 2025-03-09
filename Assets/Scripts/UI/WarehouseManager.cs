@@ -5,28 +5,16 @@ public class WarehouseManager : MonoBehaviour
 {
     [SerializeField] private RectTransform warehouseRect;
     
-    [SerializeField] private float padding = 0f;
-    
     [SerializeField] private Color warehouseColor = Color.gray;
 
-    private Vector2 _targetSize = new Vector2(800, 600);
-    
-    [SerializeField]
-    private Vector2 TargetSize
-    {
-        get => _targetSize;
-        set
-        {
-            _targetSize = value;
-            UpdateWarehouseSize();
-        }
-    }
+    [SerializeField] private Vector2 physicalSize = new Vector2(80, 60);
 
     [SerializeField] private CanvasScaler canvasScaler;
+    [SerializeField] private ZoneFactory zoneFactory;
 
     private float ScaleRatio;
     private float OldScaleRatio;
-    [SerializeField]private RectTransform _parentRect;
+    [SerializeField]private RectTransform parentRect;
     
     private void Awake()
     {
@@ -37,8 +25,11 @@ public class WarehouseManager : MonoBehaviour
         if (warehouseImage != null)
             warehouseImage.color = warehouseColor;
 
-        if (_parentRect == null)
-            _parentRect = GetComponentInParent<RectTransform>();
+        if (parentRect == null)
+            parentRect = GetComponentInParent<RectTransform>();
+
+        if (zoneFactory == null)
+            zoneFactory = GetComponent<ZoneFactory>();
 
         warehouseRect.anchoredPosition = Vector2.zero;
     }
@@ -53,21 +44,39 @@ public class WarehouseManager : MonoBehaviour
         return warehouseRect;
     }
 
+    public Vector2 GetPhysicalSize()
+    {
+        return physicalSize;
+    }
+
+    bool notFirstUpdate = false;
+
     public void Update()
     {
+        if (physicalSize.x < 0.1f)
+            physicalSize.x = 0.1f;
+        if (physicalSize.y < 0.1)
+            physicalSize.y = 0.1f;
         UpdateWarehouseSize();
+        if (notFirstUpdate)
+            foreach (var zRect in zoneFactory.ZoneRects)
+            {
+                zRect.GetComponent<ZoneController>().UpdateScale(ScaleRatio);
+            }
+        else
+            notFirstUpdate = true;
     }
 
     private void UpdateScaleRatio()
     {
-        var arCanvas = _parentRect.rect.width / _parentRect.rect.height;
-        var arWarehouse = TargetSize.x / TargetSize.y;
+        var arCanvas = parentRect.rect.width / parentRect.rect.height;
+        var arWarehouse = physicalSize.x / physicalSize.y;
         OldScaleRatio = ScaleRatio;
         
         if (arWarehouse >= arCanvas)
-            ScaleRatio = _parentRect.rect.width / TargetSize.x;        
+            ScaleRatio = parentRect.rect.width / physicalSize.x;        
         else
-            ScaleRatio = _parentRect.rect.height / TargetSize.y;
+            ScaleRatio = parentRect.rect.height / physicalSize.y;
         
         if (OldScaleRatio == 0)
             OldScaleRatio = ScaleRatio;
@@ -76,7 +85,7 @@ public class WarehouseManager : MonoBehaviour
     private void UpdateWarehouseSize()
     {
         UpdateScaleRatio();
-        warehouseRect.sizeDelta = SizeByAspectRatio(TargetSize, padding);
+        warehouseRect.sizeDelta = SizeByAspectRatio(physicalSize);
     }
     
     public Rect GetWarehouseBounds()
@@ -92,11 +101,9 @@ public class WarehouseManager : MonoBehaviour
         return new Rect(minX, minY, maxX - minX, maxY - minY);
     }
 
-    public Vector2 SizeByAspectRatio(Vector2 originalSize, float padding = 0f)
+    public Vector2 SizeByAspectRatio(Vector2 originalSize)
     {
         var updSize = originalSize * ScaleRatio;
-        updSize.x -= 2f * padding;
-        updSize.y -= 2f * padding;
         return updSize;
     }
 }

@@ -3,12 +3,16 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using UnityEngine.EventSystems;
+using System.Xml;
+using System.IO;
+using System.Xml.Serialization;
 
 public class ZoneFactory : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerMoveHandler
 {
     // Поля для создания зон склада
     [SerializeField] private GameObject zonePrefab;
     [SerializeField] private RectTransform warehouseRect;
+    [SerializeField] private Button saveButton;
 
     [System.Serializable]
     public class ZoneDefinition
@@ -48,17 +52,98 @@ public class ZoneFactory : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
 
     private Texture2D lastCursor;
     private Vector2 lastOffset;
+    
+    [System.Serializable]
+    public class ZoneDefinitionWrapper
+    {
+        public List<ZoneDefinition> zones = new List<ZoneDefinition>();
+    }
+
+    private string savePath;
 
     private void Awake()
     {
         // Если warehouseRect не задан в инспекторе, получаем его из текущего объекта
         if (warehouseRect == null)
             warehouseRect = GetComponent<RectTransform>();
+            
+        savePath = Path.Combine(Application.persistentDataPath, "zoneDefinitions.xml");
+        LoadZoneDefinitions();
+        
+        if (saveButton != null)
+            saveButton.onClick.AddListener(SaveZoneDefinitions);
     }
 
     private void Start()
     {
         CreateZones();
+    }
+    
+    private void LoadZoneDefinitions()
+    {
+        if (File.Exists(savePath))
+        {
+            try
+            {
+                XmlSerializer serializer = new XmlSerializer(typeof(ZoneDefinitionWrapper));
+                using (FileStream stream = new FileStream(savePath, FileMode.Open))
+                {
+                    ZoneDefinitionWrapper wrapper = serializer.Deserialize(stream) as ZoneDefinitionWrapper;
+                    if (wrapper != null && wrapper.zones.Count > 0)
+                    {
+                        zoneDefinitions = wrapper.zones.ToArray();
+                        Debug.Log("Зоны загружены из XML");
+                    }
+                }
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError("Ошибка при загрузке зон: " + e.Message);
+            }
+        }
+        else
+        {
+            Debug.Log("Файл сохранения не найден, используются стандартные значения");
+        }
+    }
+    
+    public void SaveZoneDefinitions()
+    {
+        try
+        {
+            // Обновляем зоны из текущих созданных объектов
+            List<ZoneDefinition> updatedZones = new List<ZoneDefinition>();
+            foreach (RectTransform zoneRect in zoneRects)
+            {
+                ZoneController controller = zoneRect.GetComponent<ZoneController>();
+                if (controller != null)
+                {
+                    ZoneDefinition zone = new ZoneDefinition
+                    {
+                        name = controller.zoneName,
+                        color = controller.GetColor(),
+                        physicalSize = controller.GetPhysicalSize(),
+                        physicalPosition = controller.GetPhysicalPosition()
+                    };
+                    updatedZones.Add(zone);
+                }
+            }
+            
+            if (updatedZones.Count > 0)
+            {
+                ZoneDefinitionWrapper wrapper = new ZoneDefinitionWrapper { zones = updatedZones };
+                XmlSerializer serializer = new XmlSerializer(typeof(ZoneDefinitionWrapper));
+                using (FileStream stream = new FileStream(savePath, FileMode.Create))
+                {
+                    serializer.Serialize(stream, wrapper);
+                }
+                Debug.Log("Зоны сохранены в XML: " + savePath);
+            }
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogError("Ошибка при сохранении зон: " + e.Message);
+        }
     }
 
     /// <summary>

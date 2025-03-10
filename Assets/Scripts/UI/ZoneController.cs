@@ -104,6 +104,11 @@ public class ZoneController : MonoBehaviour, IPointerDownHandler, IPointerUpHand
         physicalPosition = position;
         ValidatePosition();
     }
+
+    public Color GetColor()
+    {
+        return zoneColor;
+    }
     
     // Получение физических размеров зоны
     public Vector2 GetPhysicalSize()

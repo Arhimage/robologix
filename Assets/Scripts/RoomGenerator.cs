@@ -39,22 +39,17 @@ public class RoomGenerator : MonoBehaviour
 
     public void GenerateRoom()
     {
-        // Clear previous generation
         foreach (GameObject obj in generatedObjects)
         {
             Destroy(obj);
         }
         generatedObjects.Clear();
         
-        // Generate box (walls, floor, ceiling)
         GenerateBox();
         
-        // Generate areas
         GenerateChargingArea();
         GenerateLoadingArea();
-        // GenerateShelvesArea();
         
-        // Place vehicle
         PlaceVehicle();
     }
 

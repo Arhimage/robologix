@@ -14,6 +14,7 @@ public class WarehouseManager : MonoBehaviour
 
     private float ScaleRatio;
     private float OldScaleRatio;
+    private Image warehouseImage;
     [SerializeField]private RectTransform parentRect;
     
     private void Awake()
@@ -21,7 +22,7 @@ public class WarehouseManager : MonoBehaviour
         if (warehouseRect == null)
             warehouseRect = GetComponent<RectTransform>();
         
-        Image warehouseImage = warehouseRect.GetComponent<Image>();
+        warehouseImage = warehouseRect.GetComponent<Image>();
         if (warehouseImage != null)
             warehouseImage.color = warehouseColor;
 
@@ -53,15 +54,17 @@ public class WarehouseManager : MonoBehaviour
 
     public void Update()
     {
+        if (warehouseImage != null)
+            warehouseImage.color = warehouseColor;
         if (physicalSize.x < 0.1f)
             physicalSize.x = 0.1f;
         if (physicalSize.y < 0.1)
             physicalSize.y = 0.1f;
         UpdateWarehouseSize();
         if (notFirstUpdate)
-            foreach (var zRect in zoneFactory.ZoneRects)
+            foreach (var zone in zoneFactory.Zones)
             {
-                zRect.GetComponent<ZoneController>().UpdateScale(ScaleRatio);
+                zone.Controller.UpdateScale(ScaleRatio);
             }
         else
             notFirstUpdate = true;

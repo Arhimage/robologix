@@ -5160,7 +5160,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   zonePrefab: {fileID: 7784877182295958547, guid: 48d008883467a334a8a6626d0ed44342, type: 3}
   warehouseRect: {fileID: 625336655}
-  saveButton: {fileID: 0}
   defaultCursor: {fileID: 2800000, guid: 42eb10c5170f9dd4dafe87271f589386, type: 3}
   resizeHorizontalCursor: {fileID: 2800000, guid: 54d6baead194f504694380669cf6a905, type: 3}
   resizeVerticalCursor: {fileID: 2800000, guid: 694a8ccfdd08be14cb66806f7ef7ef72, type: 3}
@@ -5184,8 +5183,8 @@ MonoBehaviour:
   warehouseColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
   physicalSize: {x: 80, y: 60}
   canvasScaler: {fileID: 1626551025}
-  zoneFactory: {fileID: 0}
-  parentRect: {fileID: 0}
+  zoneFactory: {fileID: 625336656}
+  parentRect: {fileID: 69155343}
 --- !u!114 &625336658
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5587,6 +5586,11 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 679657541}
   m_CullTransparentMesh: 1
+--- !u!1 &684525513 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 1290554408192451061, guid: a2af603045ba5c14daf265ec1098bc44, type: 3}
+  m_PrefabInstance: {fileID: 5764481783039321894}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &689427233
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -8802,18 +8806,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: de2f813efc0b3c54dbf5cc3603dabe58, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  areaSize: {x: 20, y: 30}
-  areaCenter: {x: 0, y: 0, z: 0}
-  minShelfSize: {x: 1, y: 2}
-  minDistanceBetweenRacks: 2
-  shelfLevels: 4
+  shelfPrefab: {fileID: 1911482249}
+  supportPrefab: {fileID: 684525513}
+  spawnAreaSize: {x: 10, y: 2, z: 10}
+  spawnAlongX: 1
+  floorCount: 2
   levelHeight: 0.5
-  placementType: 0
-  verticalSupportPrefab: {fileID: 1290554408192451061, guid: a2af603045ba5c14daf265ec1098bc44, type: 3}
-  horizontalShelfPrefab: {fileID: 8575731370956851837, guid: d72cebcaf411569439f3611e970b8bf2, type: 3}
-  generateOnStart: 1
-  visualizeArea: 1
-  areaColor: {r: 0.5, g: 0.5, b: 1, a: 0.2}
+  shelfWidth: 1
+  maxShelfLength: 5
+  minShelfLength: 2
+  minAisleWidth: 2
 --- !u!4 &1072001060 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 3512b7362a1808f4c85fd304bd493cd3, type: 3}
@@ -10225,7 +10227,7 @@ AudioListener:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1219763791}
-  m_Enabled: 1
+  m_Enabled: 0
 --- !u!20 &1219763795
 Camera:
   m_ObjectHideFlags: 0
@@ -17237,6 +17239,11 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 3512b7362a1808f4c85fd304bd493cd3, type: 3}
+--- !u!1 &1911482249 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 8575731370956851837, guid: d72cebcaf411569439f3611e970b8bf2, type: 3}
+  m_PrefabInstance: {fileID: 2848760805650073783}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &1912591561
 PrefabInstance:
   m_ObjectHideFlags: 0

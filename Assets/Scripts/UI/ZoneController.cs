@@ -5,26 +5,13 @@ using TMPro;
 
 public class ZoneController : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IDragHandler
 {
-    public string zoneName;
-    
-    [SerializeField] private Color zoneColor;
-    
-    // Физические размеры в метрах
-    [SerializeField] private readonly Vector2 minPhysicalSize = new Vector2(0.5f, 0.5f);
-    
-    // Физические размеры и положение зоны в метрах
-    [SerializeField] private Vector2 physicalSize;
-    [SerializeField] private Vector2 physicalPosition;
-    
-    // Коэффициент масштабирования (пиксели на метр)
-    private float scaleFactor = 1f; // По умолчанию 100 пикселей на метр
-    
+    [SerializeField] private Vector2 minPhysicalSize = new Vector2(4f, 4f);
+    private RectTransform rect;
+    [SerializeField] private Zone data;
+    private float scaleFactor = 1f;
     private WarehouseManager warehouseManager;
-    
-    private RectTransform rectTransform;
     private Image zoneImage;
     private TextMeshProUGUI zoneText;
-    
     private bool isDragging = false;
     private bool isResizing = false;
     private Vector2 resizeDirection;
@@ -32,14 +19,10 @@ public class ZoneController : MonoBehaviour, IPointerDownHandler, IPointerUpHand
     
     private void Awake()
     {
-        rectTransform = GetComponent<RectTransform>();
+        rect = GetComponent<RectTransform>();
         zoneImage = GetComponent<Image>();
         warehouseManager = GetComponentInParent<WarehouseManager>();
-        
-        if (zoneImage != null && zoneColor != Color.clear)
-        {
-            zoneImage.color = zoneColor;
-        }
+        Debug.Log(warehouseManager.name);
     }
 
     private void Start()
@@ -47,7 +30,7 @@ public class ZoneController : MonoBehaviour, IPointerDownHandler, IPointerUpHand
         zoneText = GetComponentInChildren<TextMeshProUGUI>();
         if (zoneText != null)
         {
-            zoneText.text = zoneName;
+            zoneText.text = data.Name;
         }
         else
         {
@@ -56,7 +39,7 @@ public class ZoneController : MonoBehaviour, IPointerDownHandler, IPointerUpHand
             zoneText = textObj.AddComponent<TextMeshProUGUI>();
             zoneText.fontSize = 14;
             zoneText.alignment = TextAlignmentOptions.Center;
-            zoneText.text = zoneName;
+            zoneText.text = data.Name;
             zoneText.color = Color.black;
             
             RectTransform textRect = textObj.GetComponent<RectTransform>();
@@ -65,9 +48,34 @@ public class ZoneController : MonoBehaviour, IPointerDownHandler, IPointerUpHand
             textRect.offsetMin = Vector2.zero;
             textRect.offsetMax = Vector2.zero;
         }
-        
-        // Обновить отображение с учетом физических размеров
-        // UpdateDisplay();
+    }
+
+    public void SetData(Zone data)
+    {
+        if (data != null)
+            data.ZoneChanged -= UpdateData;
+
+        this.data = data;
+        this.data.ZoneChanged += UpdateData;
+        UpdateData();
+    }
+
+    public Zone GetData()
+    {
+        return data;
+    }
+
+    public RectTransform GetRect()
+    {
+        return rect;
+    }
+
+    private void UpdateData()
+    {
+        SetPhysicalSize(data.PhysicalSize);
+        SetPhysicalPosition(data.PhysicalPosition);
+        SetColor(data.Color);
+        ValidatePosition();
     }
     
     // Новый метод для обновления масштаба отображения
@@ -80,62 +88,67 @@ public class ZoneController : MonoBehaviour, IPointerDownHandler, IPointerUpHand
     // Метод для обновления визуального отображения на основе физических размеров
     private void UpdateDisplay()
     {
-        // Преобразуем физические размеры в пиксели для отображения
-        rectTransform.sizeDelta = new Vector2(
-            physicalSize.x * scaleFactor,
-            physicalSize.y * scaleFactor
+        rect.sizeDelta = new Vector2(
+            data.PhysicalSize.x * scaleFactor,
+            data.PhysicalSize.y * scaleFactor
         );
         
-        rectTransform.anchoredPosition = new Vector2(
-            physicalPosition.x * scaleFactor,
-            physicalPosition.y * scaleFactor
+        rect.anchoredPosition = new Vector2(
+            data.PhysicalPosition.x * scaleFactor,
+            data.PhysicalPosition.y * scaleFactor
         );
     }
 
     public void SetPhysicalSize(Vector2 size)
     {
-        physicalSize = size;
-        Debug.Log(physicalSize);
-        ValidatePosition();
+        if (!size.Equals(data.PhysicalSize))
+        {
+            data.PhysicalSize = size;
+        }
     }
 
     public void SetPhysicalPosition(Vector2 position)
     {
-        physicalPosition = position;
-        ValidatePosition();
+        if (!data.PhysicalPosition.Equals(position))
+        {
+            data.PhysicalPosition = position;
+        }
     }
 
     public Color GetColor()
     {
-        return zoneColor;
+        return data.Color;
     }
     
     // Получение физических размеров зоны
     public Vector2 GetPhysicalSize()
     {
-        return physicalSize;
+        return data.PhysicalSize;
     }
     
     // Получение физической позиции зоны
     public Vector2 GetPhysicalPosition()
     {
-        return physicalPosition;
+        return data.PhysicalPosition;
     }
     
     // Установка физических размеров и позиции
     public void SetPhysicalProperties(Vector2 position, Vector2 size)
     {
-        physicalPosition = position;
-        physicalSize = size;
+        data.PhysicalPosition = position;
+        data.PhysicalSize = size;
         UpdateDisplay();
     }
     
     public void SetColor(Color color)
     {
-        zoneColor = color;
-        if (zoneImage != null)
+        if (!data.Color.Equals(color))
         {
-            zoneImage.color = color;
+            data.Color = color;
+            if (zoneImage != null)
+            {
+                zoneImage.color = color;
+            }
         }
     }
     
@@ -145,12 +158,12 @@ public class ZoneController : MonoBehaviour, IPointerDownHandler, IPointerUpHand
         
         Vector2 localPointerPosition;
         RectTransformUtility.ScreenPointToLocalPointInRectangle(
-            rectTransform, eventData.position, eventData.pressEventCamera, out localPointerPosition);
+            rect, eventData.position, eventData.pressEventCamera, out localPointerPosition);
         
         float edgeThreshold = 10f;
-        bool nearRightEdge = localPointerPosition.x > rectTransform.rect.width - edgeThreshold;
+        bool nearRightEdge = localPointerPosition.x > rect.rect.width - edgeThreshold;
         bool nearLeftEdge = localPointerPosition.x < edgeThreshold;
-        bool nearTopEdge = localPointerPosition.y > rectTransform.rect.height - edgeThreshold;
+        bool nearTopEdge = localPointerPosition.y > rect.rect.height - edgeThreshold;
         bool nearBottomEdge = localPointerPosition.y < edgeThreshold;
         
         if (nearRightEdge || nearLeftEdge || nearTopEdge || nearBottomEdge)
@@ -189,7 +202,7 @@ public class ZoneController : MonoBehaviour, IPointerDownHandler, IPointerUpHand
             );
             
             // Обновляем физическое положение
-            physicalPosition += physicalDelta;
+            data.PhysicalPosition += physicalDelta;
             
             // Обновляем визуальное отображение и проверяем границы
             ValidatePosition();
@@ -204,8 +217,8 @@ public class ZoneController : MonoBehaviour, IPointerDownHandler, IPointerUpHand
                 delta.y / scaleFactor
             );
             
-            Vector2 newPhysicalSize = physicalSize;
-            Vector2 newPhysicalPosition = physicalPosition;
+            Vector2 newPhysicalSize = data.PhysicalSize;
+            Vector2 newPhysicalPosition = data.PhysicalPosition;
             
             if (resizeDirection.x > 0)
             {
@@ -235,8 +248,8 @@ public class ZoneController : MonoBehaviour, IPointerDownHandler, IPointerUpHand
             
             if (newPhysicalSize.x >= minPhysicalSize.x && newPhysicalSize.y >= minPhysicalSize.y)
             {
-                physicalSize = newPhysicalSize;
-                physicalPosition = newPhysicalPosition;
+                data.PhysicalSize = newPhysicalSize;
+                data.PhysicalPosition = newPhysicalPosition;
                 
                 // Обновляем визуальное отображение и проверяем границы
                 ValidatePosition();
@@ -247,37 +260,39 @@ public class ZoneController : MonoBehaviour, IPointerDownHandler, IPointerUpHand
     }
     
     public void ValidatePosition()
-    {
-        if (warehouseManager == null)
-        {
-            warehouseManager = GetComponentInParent<WarehouseManager>();
-            if (warehouseManager == null) return;
-        }
-        
+    {        
         Vector2 warehousePhysicalSize =  warehouseManager.GetPhysicalSize();
         
+        Vector2 calcPhysSize = new Vector2(
+            Mathf.Abs(data.PhysicalSize.x),
+            Mathf.Abs(data.PhysicalSize.y));
         // // Валидация физических размеров
-        physicalSize.x = Mathf.Abs(physicalSize.x);
-        physicalSize.y = Mathf.Abs(physicalSize.y);
         
-        if (physicalSize.x < minPhysicalSize.x)
-        {
-            physicalSize.x = minPhysicalSize.x;
-        } 
-        if (physicalSize.y < minPhysicalSize.y) physicalSize.y = minPhysicalSize.y;
+        if (calcPhysSize.x < minPhysicalSize.x)
+            calcPhysSize.x = minPhysicalSize.x;
+
+        if (calcPhysSize.y < minPhysicalSize.y) calcPhysSize.y = minPhysicalSize.y;
         
-        if (physicalSize.x > warehousePhysicalSize.x) physicalSize.x = warehousePhysicalSize.x;
-        if (physicalSize.y > warehousePhysicalSize.y) physicalSize.y = warehousePhysicalSize.y;
+        if (calcPhysSize.x > warehousePhysicalSize.x) calcPhysSize.x = warehousePhysicalSize.x;
+        if (calcPhysSize.y > warehousePhysicalSize.y) calcPhysSize.y = warehousePhysicalSize.y;
+
+        if (data.PhysicalSize.x != calcPhysSize.x || data.PhysicalSize.y != calcPhysSize.y)
+            data.PhysicalSize = calcPhysSize; 
+
+        Vector2 calcPhyPos = new Vector2(data.PhysicalPosition.x, data.PhysicalPosition.y);
         
         // Валидация физической позиции
-        if (physicalPosition.x < 0) physicalPosition.x = 0;
-        if (physicalPosition.y < 0) physicalPosition.y = 0;
+        if (calcPhyPos.x < 0) calcPhyPos.x = 0;
+        if (calcPhyPos.y < 0) calcPhyPos.y = 0;
         
-        if (physicalPosition.x + physicalSize.x > warehousePhysicalSize.x)
-            physicalPosition.x = warehousePhysicalSize.x - physicalSize.x;
+        if (calcPhyPos.x + data.PhysicalSize.x > warehousePhysicalSize.x)
+            calcPhyPos.x = warehousePhysicalSize.x - data.PhysicalSize.x;
         
-        if (physicalPosition.y + physicalSize.y > warehousePhysicalSize.y)
-            physicalPosition.y = warehousePhysicalSize.y - physicalSize.y;
+        if (calcPhyPos.y + data.PhysicalSize.y > warehousePhysicalSize.y)
+            calcPhyPos.y = warehousePhysicalSize.y - data.PhysicalSize.y;
+
+        if (data.PhysicalPosition.x != calcPhyPos.x || data.PhysicalPosition.y != calcPhyPos.y)
+            data.PhysicalPosition = calcPhyPos;
         
         // Обновляем визуальное отображение
         UpdateDisplay();

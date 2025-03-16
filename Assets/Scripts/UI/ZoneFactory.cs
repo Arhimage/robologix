@@ -1,42 +1,16 @@
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UI;
-using TMPro;
 using UnityEngine.EventSystems;
-using System.Xml;
-using System.IO;
-using System.Xml.Serialization;
+using System;
 
 public class ZoneFactory : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerMoveHandler
 {
     // Поля для создания зон склада
     [SerializeField] private GameObject zonePrefab;
     [SerializeField] private RectTransform warehouseRect;
-    [SerializeField] private Button saveButton;
 
-    [System.Serializable]
-    public class ZoneDefinition
-    {
-        public string name;
-        public Color color;
-        public Vector2 physicalSize;
-        public Vector2 physicalPosition;
-    }
-
-    // [Header("Определения зон склада")]
-    // [SerializeField]
-    private ZoneDefinition[] zoneDefinitions = new ZoneDefinition[]
-    {
-        new ZoneDefinition { name = "Зона стоянки/зарядки", color = Color.yellow, physicalSize = new Vector2(10.0f, 10.0f), physicalPosition = new Vector2(10, 10) },
-        new ZoneDefinition { name = "Зона погрузки/разгрузки", color = Color.red, physicalSize = new Vector2(10.0f, 10.0f), physicalPosition = new Vector2(30, 10) },
-        new ZoneDefinition { name = "Зона складирования", color = Color.blue, physicalSize = new Vector2(25.0f, 20.0f), physicalPosition = new Vector2(20, 25) },
-        new ZoneDefinition { name = "Офис управления", color = new Color(0.2f, 0.8f, 0.2f), physicalSize = new Vector2(7.0f, 15.0f), physicalPosition = new Vector2(40, 30) }
-    };
-
-    // Список для хранения RectTransform созданных зон для проверки позиции курсора
-
-    public LinkedList<RectTransform> ZoneRects { get => zoneRects; }
-    private LinkedList<RectTransform> zoneRects = new LinkedList<RectTransform>();
+    public LinkedList<ZoneConstructor> Zones { get => _zones; }
+    private LinkedList<ZoneConstructor> _zones = new LinkedList<ZoneConstructor>();
 
     // Параметры для работы с курсором (набор текстур и пороговое значение)
     [Header("Курсоры")]
@@ -52,98 +26,34 @@ public class ZoneFactory : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
 
     private Texture2D lastCursor;
     private Vector2 lastOffset;
-    
-    [System.Serializable]
-    public class ZoneDefinitionWrapper
+    public class ZoneConstructor
     {
-        public List<ZoneDefinition> zones = new List<ZoneDefinition>();
-    }
+        public GameObject Zone;
+        public ZoneController Controller;
+        public ZoneConstructor(Zone data, GameObject zonePrefab, RectTransform warehouseRect)
+        {
+            Zone = Instantiate(zonePrefab, warehouseRect);
+            Controller = Zone.GetComponent<ZoneController>();
+            if (Controller == null)
+                Controller = Zone.AddComponent<ZoneController>();
 
-    private string savePath;
+            Controller.SetData(data);
+            Zone.name = data.Name;
+        }
+    }
 
     private void Awake()
     {
-        // Если warehouseRect не задан в инспекторе, получаем его из текущего объекта
         if (warehouseRect == null)
             warehouseRect = GetComponent<RectTransform>();
-            
-        savePath = Path.Combine(Application.persistentDataPath, "zoneDefinitions.xml");
-        LoadZoneDefinitions();
         
-        if (saveButton != null)
-            saveButton.onClick.AddListener(SaveZoneDefinitions);
+        // if (saveButton != null)
+        //     saveButton.onClick.AddListener(SaveZoneDefinitions);
     }
 
     private void Start()
     {
         CreateZones();
-    }
-    
-    private void LoadZoneDefinitions()
-    {
-        if (File.Exists(savePath))
-        {
-            try
-            {
-                XmlSerializer serializer = new XmlSerializer(typeof(ZoneDefinitionWrapper));
-                using (FileStream stream = new FileStream(savePath, FileMode.Open))
-                {
-                    ZoneDefinitionWrapper wrapper = serializer.Deserialize(stream) as ZoneDefinitionWrapper;
-                    if (wrapper != null && wrapper.zones.Count > 0)
-                    {
-                        zoneDefinitions = wrapper.zones.ToArray();
-                        Debug.Log("Зоны загружены из XML");
-                    }
-                }
-            }
-            catch (System.Exception e)
-            {
-                Debug.LogError("Ошибка при загрузке зон: " + e.Message);
-            }
-        }
-        else
-        {
-            Debug.Log("Файл сохранения не найден, используются стандартные значения");
-        }
-    }
-    
-    public void SaveZoneDefinitions()
-    {
-        try
-        {
-            // Обновляем зоны из текущих созданных объектов
-            List<ZoneDefinition> updatedZones = new List<ZoneDefinition>();
-            foreach (RectTransform zoneRect in zoneRects)
-            {
-                ZoneController controller = zoneRect.GetComponent<ZoneController>();
-                if (controller != null)
-                {
-                    ZoneDefinition zone = new ZoneDefinition
-                    {
-                        name = controller.zoneName,
-                        color = controller.GetColor(),
-                        physicalSize = controller.GetPhysicalSize(),
-                        physicalPosition = controller.GetPhysicalPosition()
-                    };
-                    updatedZones.Add(zone);
-                }
-            }
-            
-            if (updatedZones.Count > 0)
-            {
-                ZoneDefinitionWrapper wrapper = new ZoneDefinitionWrapper { zones = updatedZones };
-                XmlSerializer serializer = new XmlSerializer(typeof(ZoneDefinitionWrapper));
-                using (FileStream stream = new FileStream(savePath, FileMode.Create))
-                {
-                    serializer.Serialize(stream, wrapper);
-                }
-                Debug.Log("Зоны сохранены в XML: " + savePath);
-            }
-        }
-        catch (System.Exception e)
-        {
-            Debug.LogError("Ошибка при сохранении зон: " + e.Message);
-        }
     }
 
     /// <summary>
@@ -157,62 +67,19 @@ public class ZoneFactory : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
             return;
         }
 
-        foreach (ZoneDefinition definition in zoneDefinitions)
+        foreach (var zone in WarehouseDataController.Settings.Zones)
         {
-            CreateZone(definition.name, definition.physicalPosition, definition.physicalSize, definition.color);
+            RegisterZone(new ZoneConstructor(zone, zonePrefab, warehouseRect));
         }
-    }
-
-    /// <summary>
-    /// Создаёт отдельную зону, задаёт ей позицию, размеры и цвет, а также регистрирует её для проверки курсора.
-    /// </summary>
-    public GameObject CreateZone(string name, Vector2 physPosition, Vector2 physSize, Color color)
-    {
-        GameObject zoneObject = Instantiate(zonePrefab, warehouseRect);
-        zoneObject.name = name;
-
-        RectTransform zoneRect = zoneObject.GetComponent<RectTransform>();
-        if (zoneRect != null)
-        {
-            zoneRect.sizeDelta = physSize;
-            zoneRect.anchoredPosition = physPosition;
-            zoneRect.anchorMin = new Vector2(0, 0);
-            zoneRect.anchorMax = new Vector2(0, 0);
-            zoneRect.pivot = new Vector2(0, 0);
-
-            RegisterZone(zoneRect);
-        }
-
-        // Настройка или добавление ZoneController для задания имени и цвета зоны
-        ZoneController controller = zoneObject.GetComponent<ZoneController>();
-        if (controller != null)
-        {
-            controller.zoneName = name;
-            Debug.Log(physSize);
-            controller.SetPhysicalSize(physSize);
-            controller.SetPhysicalPosition(physPosition);
-            controller.SetColor(color);
-        }
-        else
-        {
-            controller = zoneObject.AddComponent<ZoneController>();
-            controller.zoneName = name;
-            controller.SetPhysicalSize(physSize);
-            controller.SetPhysicalPosition(physPosition);
-            controller.SetColor(color);
-        }
-        controller.ValidatePosition();
-
-        return zoneObject;
     }
 
     /// <summary>
     /// Регистрирует зону в списке для последующей проверки при обновлении курсора.
     /// </summary>
-    public void RegisterZone(RectTransform zoneRect)
+    public void RegisterZone(ZoneConstructor zone)
     {
-        if (zoneRect != null && !zoneRects.Contains(zoneRect))
-            zoneRects.AddFirst(zoneRect);
+        if (zone != null && !Zones.Contains(zone))
+            Zones.AddFirst(zone);
     }
 
     // Обработчики событий указателя
@@ -252,8 +119,9 @@ public class ZoneFactory : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
         }
         else
             lastCursor = null;
-        foreach (RectTransform zoneRect in zoneRects)
+        foreach (var zone in Zones)
         {
+            var zoneRect = zone.Controller.GetRect();
             Vector2 localPointerPosition;
             if (RectTransformUtility.ScreenPointToLocalPointInRectangle(zoneRect, eventData.position, eventData.pressEventCamera, out localPointerPosition))
             {

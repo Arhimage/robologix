@@ -28,17 +28,17 @@ public class ZoneFactory : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     private Vector2 lastOffset;
     public class ZoneConstructor
     {
-        public GameObject Zone;
+        public GameObject ZoneMovable;
         public ZoneController Controller;
-        public ZoneConstructor(Zone data, GameObject zonePrefab, RectTransform warehouseRect)
+        public ZoneConstructor(ZoneMovable data, GameObject zonePrefab, RectTransform warehouseRect)
         {
-            Zone = Instantiate(zonePrefab, warehouseRect);
-            Controller = Zone.GetComponent<ZoneController>();
+            ZoneMovable = Instantiate(zonePrefab, warehouseRect);
+            Controller = ZoneMovable.GetComponent<ZoneController>();
             if (Controller == null)
-                Controller = Zone.AddComponent<ZoneController>();
+                Controller = ZoneMovable.AddComponent<ZoneController>();
 
             Controller.SetData(data);
-            Zone.name = data.Name;
+            ZoneMovable.name = data.Name;
         }
     }
 
@@ -63,7 +63,7 @@ public class ZoneFactory : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     {
         if (zonePrefab == null)
         {
-            Debug.LogError("Zone шаблон не определен в ZoneFactory!");
+            Debug.LogError("ZoneMovable шаблон не определен в ZoneFactory!");
             return;
         }
 

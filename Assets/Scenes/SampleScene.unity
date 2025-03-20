@@ -626,7 +626,6 @@ GameObject:
   - component: {fileID: 69155343}
   - component: {fileID: 69155345}
   - component: {fileID: 69155344}
-  - component: {fileID: 69155346}
   m_Layer: 5
   m_Name: WhCanvas
   m_TagString: Untagged
@@ -692,21 +691,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 69155342}
   m_CullTransparentMesh: 1
---- !u!114 &69155346
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 69155342}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fae3af8fb8bca1047902aca80ae460bd, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  OnUIUpdated:
-    m_PersistentCalls:
-      m_Calls: []
 --- !u!4 &71755859 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 3512b7362a1808f4c85fd304bd493cd3, type: 3}
@@ -5180,10 +5164,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   warehouseRect: {fileID: 625336655}
-  warehouseColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
-  physicalSize: {x: 80, y: 60}
   canvasScaler: {fileID: 1626551025}
   zoneFactory: {fileID: 625336656}
+  zone:
+    _name: 
+    _color: {r: 0, g: 0, b: 0, a: 0}
+    _physicalSize: {x: 0, y: 0}
   parentRect: {fileID: 69155343}
 --- !u!114 &625336658
 MonoBehaviour:
@@ -5962,6 +5948,7 @@ GameObject:
   - component: {fileID: 720819700}
   - component: {fileID: 720819699}
   - component: {fileID: 720819698}
+  - component: {fileID: 720819701}
   m_Layer: 5
   m_Name: Button
   m_TagString: Untagged
@@ -6031,7 +6018,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 720819699}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 720819701}
+        m_TargetAssemblyTypeName: WHEditorSettings, Assembly-CSharp
+        m_MethodName: ShowSettings
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &720819699
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6070,6 +6069,18 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 720819696}
   m_CullTransparentMesh: 1
+--- !u!114 &720819701
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 720819696}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c31918c00e25e1f4490194a880a6ec28, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!4 &721943577 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 3512b7362a1808f4c85fd304bd493cd3, type: 3}
@@ -15822,6 +15833,7 @@ GameObject:
   - component: {fileID: 1820949705}
   - component: {fileID: 1820949704}
   - component: {fileID: 1820949703}
+  - component: {fileID: 1820949706}
   m_Layer: 5
   m_Name: SaveButton
   m_TagString: Untagged
@@ -15893,9 +15905,9 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 625336656}
-        m_TargetAssemblyTypeName: ZoneFactory, Assembly-CSharp
-        m_MethodName: SaveZoneDefinitions
+      - m_Target: {fileID: 1820949706}
+        m_TargetAssemblyTypeName: WarehouseDCWrapper, Assembly-CSharp
+        m_MethodName: OnButtonClick
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -15943,6 +15955,18 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1820949701}
   m_CullTransparentMesh: 1
+--- !u!114 &1820949706
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1820949701}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f2034b279cf9a1e4994af22c5edcad54, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!4 &1821947250 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 3512b7362a1808f4c85fd304bd493cd3, type: 3}

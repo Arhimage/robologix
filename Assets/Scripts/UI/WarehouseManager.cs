@@ -4,13 +4,9 @@ using UnityEngine.UI;
 public class WarehouseManager : MonoBehaviour
 {
     [SerializeField] private RectTransform warehouseRect;
-    
-    [SerializeField] private Color warehouseColor = Color.gray;
-
-    [SerializeField] private Vector2 physicalSize = new Vector2(80, 60);
-
     [SerializeField] private CanvasScaler canvasScaler;
     [SerializeField] private ZoneFactory zoneFactory;
+    [SerializeField] private ZoneBase zone;
 
     private float ScaleRatio;
     private float OldScaleRatio;
@@ -23,8 +19,6 @@ public class WarehouseManager : MonoBehaviour
             warehouseRect = GetComponent<RectTransform>();
         
         warehouseImage = warehouseRect.GetComponent<Image>();
-        if (warehouseImage != null)
-            warehouseImage.color = warehouseColor;
 
         if (parentRect == null)
             parentRect = GetComponentInParent<RectTransform>();
@@ -33,6 +27,8 @@ public class WarehouseManager : MonoBehaviour
             zoneFactory = GetComponent<ZoneFactory>();
 
         warehouseRect.anchoredPosition = Vector2.zero;
+
+        zone = WarehouseDataController.Settings.Warehouse;
     }
 
     private void Start()
@@ -47,7 +43,7 @@ public class WarehouseManager : MonoBehaviour
 
     public Vector2 GetPhysicalSize()
     {
-        return physicalSize;
+        return zone.PhysicalSize;
     }
 
     bool notFirstUpdate = false;
@@ -55,12 +51,19 @@ public class WarehouseManager : MonoBehaviour
     public void Update()
     {
         if (warehouseImage != null)
-            warehouseImage.color = warehouseColor;
-        if (physicalSize.x < 0.1f)
-            physicalSize.x = 0.1f;
-        if (physicalSize.y < 0.1)
-            physicalSize.y = 0.1f;
+            warehouseImage.color = zone.Color;
+        Vector2 calcSize = new Vector2(zone.PhysicalSize.x, zone.PhysicalSize.y);
+
+        if (calcSize.x < 0.1f)
+            calcSize.x = 0.1f;
+        if (calcSize.y < 0.1)
+            calcSize.y = 0.1f;
+
+        if (!calcSize.Equals(zone.PhysicalSize))
+            zone.PhysicalSize = calcSize;
+
         UpdateWarehouseSize();
+
         if (notFirstUpdate)
             foreach (var zone in zoneFactory.Zones)
             {
@@ -73,13 +76,13 @@ public class WarehouseManager : MonoBehaviour
     private void UpdateScaleRatio()
     {
         var arCanvas = parentRect.rect.width / parentRect.rect.height;
-        var arWarehouse = physicalSize.x / physicalSize.y;
+        var arWarehouse = zone.PhysicalSize.x / zone.PhysicalSize.y;
         OldScaleRatio = ScaleRatio;
         
         if (arWarehouse >= arCanvas)
-            ScaleRatio = parentRect.rect.width / physicalSize.x;        
+            ScaleRatio = parentRect.rect.width / zone.PhysicalSize.x;        
         else
-            ScaleRatio = parentRect.rect.height / physicalSize.y;
+            ScaleRatio = parentRect.rect.height / zone.PhysicalSize.y;
         
         if (OldScaleRatio == 0)
             OldScaleRatio = ScaleRatio;
@@ -88,7 +91,7 @@ public class WarehouseManager : MonoBehaviour
     private void UpdateWarehouseSize()
     {
         UpdateScaleRatio();
-        warehouseRect.sizeDelta = SizeByAspectRatio(physicalSize);
+        warehouseRect.sizeDelta = SizeByAspectRatio(zone.PhysicalSize);
     }
     
     public Rect GetWarehouseBounds()

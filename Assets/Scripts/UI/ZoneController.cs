@@ -7,10 +7,10 @@ public class ZoneController : MonoBehaviour, IPointerDownHandler, IPointerUpHand
 {
     [SerializeField] private Vector2 minPhysicalSize = new Vector2(4f, 4f);
     private RectTransform rect;
-    [SerializeField] private Zone data;
+    [SerializeField] private ZoneMovable data;
     private float scaleFactor = 1f;
     private WarehouseManager warehouseManager;
-    private Image zoneImage;
+    [SerializeField] private Image zoneImage;
     private TextMeshProUGUI zoneText;
     private bool isDragging = false;
     private bool isResizing = false;
@@ -22,7 +22,6 @@ public class ZoneController : MonoBehaviour, IPointerDownHandler, IPointerUpHand
         rect = GetComponent<RectTransform>();
         zoneImage = GetComponent<Image>();
         warehouseManager = GetComponentInParent<WarehouseManager>();
-        Debug.Log(warehouseManager.name);
     }
 
     private void Start()
@@ -50,17 +49,13 @@ public class ZoneController : MonoBehaviour, IPointerDownHandler, IPointerUpHand
         }
     }
 
-    public void SetData(Zone data)
+    public void SetData(ZoneMovable data)
     {
-        if (data != null)
-            data.ZoneChanged -= UpdateData;
-
         this.data = data;
-        this.data.ZoneChanged += UpdateData;
-        UpdateData();
+        ValidatePosition();
     }
 
-    public Zone GetData()
+    public ZoneMovable GetData()
     {
         return data;
     }
@@ -68,14 +63,6 @@ public class ZoneController : MonoBehaviour, IPointerDownHandler, IPointerUpHand
     public RectTransform GetRect()
     {
         return rect;
-    }
-
-    private void UpdateData()
-    {
-        SetPhysicalSize(data.PhysicalSize);
-        SetPhysicalPosition(data.PhysicalPosition);
-        SetColor(data.Color);
-        ValidatePosition();
     }
     
     // Новый метод для обновления масштаба отображения
@@ -95,8 +82,10 @@ public class ZoneController : MonoBehaviour, IPointerDownHandler, IPointerUpHand
         
         rect.anchoredPosition = new Vector2(
             data.PhysicalPosition.x * scaleFactor,
-            data.PhysicalPosition.y * scaleFactor
+            -data.PhysicalPosition.y * scaleFactor - rect.sizeDelta.y
         );
+
+        zoneImage.color = data.Color;
     }
 
     public void SetPhysicalSize(Vector2 size)
@@ -160,11 +149,11 @@ public class ZoneController : MonoBehaviour, IPointerDownHandler, IPointerUpHand
         RectTransformUtility.ScreenPointToLocalPointInRectangle(
             rect, eventData.position, eventData.pressEventCamera, out localPointerPosition);
         
-        float edgeThreshold = 10f;
+        float edgeThreshold = 20f;
         bool nearRightEdge = localPointerPosition.x > rect.rect.width - edgeThreshold;
         bool nearLeftEdge = localPointerPosition.x < edgeThreshold;
-        bool nearTopEdge = localPointerPosition.y > rect.rect.height - edgeThreshold;
-        bool nearBottomEdge = localPointerPosition.y < edgeThreshold;
+        bool nearBottomEdge = localPointerPosition.y > rect.rect.height - edgeThreshold;
+        bool nearTopEdge = localPointerPosition.y < edgeThreshold;
         
         if (nearRightEdge || nearLeftEdge || nearTopEdge || nearBottomEdge)
         {
@@ -198,7 +187,7 @@ public class ZoneController : MonoBehaviour, IPointerDownHandler, IPointerUpHand
             // Конвертируем дельту пикселей в физические единицы
             Vector2 physicalDelta = new Vector2(
                 delta.x / scaleFactor,
-                delta.y / scaleFactor
+                -delta.y / scaleFactor
             );
             
             // Обновляем физическое положение
@@ -214,7 +203,7 @@ public class ZoneController : MonoBehaviour, IPointerDownHandler, IPointerUpHand
             // Конвертируем дельту пикселей в физические единицы
             Vector2 physicalDelta = new Vector2(
                 delta.x / scaleFactor,
-                delta.y / scaleFactor
+                -delta.y / scaleFactor
             );
             
             Vector2 newPhysicalSize = data.PhysicalSize;

@@ -96,6 +96,16 @@ public class ZoneMovable : ZoneBase
             Update();
     }
 
+    public virtual Vector3 GetWorldPosition(Vector2 baseUI)
+    {
+        return new Vector3(PhysicalPosition.x - baseUI.x / 2 + PhysicalSize.x / 2, 0, baseUI.y / 2 - PhysicalPosition.y - PhysicalSize.y / 2);
+    }
+
+    public virtual Vector3 GetWorldSize()
+    {
+        return new Vector3(PhysicalSize.x, 0.1f, PhysicalSize.y);
+    }
+
     public override object Clone()
     {
         return new ZoneMovable()
@@ -122,6 +132,18 @@ public class ZoneDirectional : ZoneMovable
             ZoneChanged?.Invoke();
         }
     }
+
+    // public override Vector3 GetWorldPosition(Vector2 baseUI)
+    // {
+    //     var pos = new Vector3(PhysicalPosition.x, 0, PhysicalPosition.y);
+    //     Debug.Log(pos);
+    //     return pos;
+    // }
+
+    // public override Vector3 GetWorldSize()
+    // {
+    //     return new Vector3(PhysicalSize.x, 0.1f, PhysicalSize.y);
+    // }
 
     public void Fill(ZoneDirectional zone, bool update = true)
     {

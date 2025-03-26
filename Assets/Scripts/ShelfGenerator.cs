@@ -8,7 +8,8 @@ public class ShelfGenerator : MonoBehaviour
     [SerializeField] private GameObject supportPrefab;
 
     [Header("Параметры области")]
-    [SerializeField] private Vector3 spawnAreaSize = new Vector3(10f, 2f, 10f);
+    [SerializeField] public Vector3 spawnAreaSize = new Vector3(10f, 2f, 10f);
+    [SerializeField] public Vector3 spawnAreaOffset = Vector3.zero; // Новое свойство для смещения
     [SerializeField] private bool spawnAlongX = true;
     [SerializeField] private int floorCount = 2;
 
@@ -22,13 +23,23 @@ public class ShelfGenerator : MonoBehaviour
     private Transform shelveParent;
     private Dictionary<Vector2, List<float>> supportPositions = new Dictionary<Vector2, List<float>>();
 
-    private void Start()
-    {
-        GenerateShelves();
-    }
+    // Вычисляем центр области спавна с учетом смещения
+    private Vector3 SpawnAreaCenter => transform.position + spawnAreaOffset;
 
     public void GenerateShelves()
     {
+        // Создаем родительский объект для полок, если его нет
+        if (shelveParent == null)
+        {
+            shelveParent = new GameObject("Generated Shelves").transform;
+            shelveParent.parent = transform;
+            shelveParent.position = spawnAreaOffset;
+        }
+        else
+        {
+            shelveParent.localPosition = spawnAreaOffset;
+        }
+
         ClearShelves();
         supportPositions.Clear();
 
@@ -84,7 +95,7 @@ public class ShelfGenerator : MonoBehaviour
     {
         GameObject shelfContainer = new GameObject($"Shelf_Floor{floor}_Pos{position}");
         shelfContainer.transform.parent = shelveParent;
-        shelfContainer.transform.position = position;
+        shelfContainer.transform.localPosition = position; // Используем локальную позицию относительно родителя
 
         GameObject shelfInstance = Instantiate(shelfPrefab, Vector3.zero, Quaternion.identity, shelfContainer.transform);
         Vector3 shelfScale;
@@ -147,6 +158,8 @@ public class ShelfGenerator : MonoBehaviour
     {
         Transform supportsParent = new GameObject("Supports").transform;
         supportsParent.parent = shelveParent;
+        supportsParent.localPosition = Vector3.zero;
+        
         foreach (var supportData in supportPositions)
         {
             Vector2 coord = supportData.Key;
@@ -162,7 +175,7 @@ public class ShelfGenerator : MonoBehaviour
                     // Сдвигаем поддержку вниз на половину её высоты
                     float adjustedY = supportYPosition - (supportHeight / 2);
                     GameObject support = Instantiate(supportPrefab, supportsParent);
-                    support.transform.position = new Vector3(coord.x, adjustedY, coord.y);
+                    support.transform.localPosition = new Vector3(coord.x, adjustedY, coord.y);
                     // Масштабируем поддержку по оси Z вместо оси Y
                     Vector3 scale = support.transform.localScale;
                     scale.z = supportHeight;
@@ -185,6 +198,6 @@ public class ShelfGenerator : MonoBehaviour
     private void OnDrawGizmos()
     {
         Gizmos.color = new Color(0.8f, 0.2f, 0.2f, 0.3f);
-        Gizmos.DrawCube(transform.position, spawnAreaSize);
+        Gizmos.DrawCube(SpawnAreaCenter, spawnAreaSize);
     }
 }

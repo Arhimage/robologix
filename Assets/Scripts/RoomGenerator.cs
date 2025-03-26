@@ -32,11 +32,6 @@ public class RoomGenerator : MonoBehaviour
     private GameObject shelvesArea;
     private List<GameObject> generatedObjects = new List<GameObject>();
 
-    void Start()
-    {
-        GenerateRoom();
-    }
-
     public void GenerateRoom()
     {
         foreach (GameObject obj in generatedObjects)
@@ -55,19 +50,15 @@ public class RoomGenerator : MonoBehaviour
 
     private void GenerateBox()
     {
-        // Floor - не требует вращения, видимая сторона уже смотрит вверх
         GameObject floor = CreateWall(new Vector3(0, 0, 0), new Vector3(boxSize.x, boxSize.z, 0.1f), Quaternion.Euler(-90, 0, 0));
         floor.name = "Floor";
         generatedObjects.Add(floor);
         
-        // Ceiling - поворачиваем на 180 градусов, чтобы видимая сторона смотрела вниз
         GameObject ceiling = CreateWall(new Vector3(0, boxSize.y, 0), new Vector3(boxSize.x, boxSize.z, 0.1f), Quaternion.Euler(90, 0, 0));
         ceiling.name = "Ceiling";
         generatedObjects.Add(ceiling);
         
-        // Walls - для всех стен необходимо корректировать поворот
         
-        // Front wall - поворачиваем, чтобы видимая сторона смотрела внутрь
         GameObject frontWall = CreateWall(
             new Vector3(0, boxSize.y/2, boxSize.z/2), 
             new Vector3(boxSize.x, boxSize.y, 0.1f), 
@@ -76,7 +67,6 @@ public class RoomGenerator : MonoBehaviour
         frontWall.name = "FrontWall";
         generatedObjects.Add(frontWall);
         
-        // Back wall - поворачиваем, чтобы видимая сторона смотрела внутрь
         GameObject backWall = CreateWall(
             new Vector3(0, boxSize.y/2, -boxSize.z/2), 
             new Vector3(boxSize.x, boxSize.y, 0.1f), 
@@ -85,7 +75,6 @@ public class RoomGenerator : MonoBehaviour
         backWall.name = "BackWall";
         generatedObjects.Add(backWall);
         
-        // Left wall - поворачиваем, чтобы видимая сторона смотрела внутрь
         GameObject leftWall = CreateWall(
             new Vector3(-boxSize.x/2, boxSize.y/2, 0), 
             new Vector3(boxSize.z, boxSize.y, 0.1f), 
@@ -94,7 +83,6 @@ public class RoomGenerator : MonoBehaviour
         leftWall.name = "LeftWall";
         generatedObjects.Add(leftWall);
         
-        // Right wall - поворачиваем, чтобы видимая сторона смотрела внутрь
         GameObject rightWall = CreateWall(
             new Vector3(boxSize.x/2, boxSize.y/2, 0), 
             new Vector3(boxSize.z, boxSize.y, 0.1f), 
@@ -192,7 +180,7 @@ public class RoomGenerator : MonoBehaviour
     {
         shelvesArea = GameObject.CreatePrimitive(PrimitiveType.Cube);
         shelvesArea.name = "ShelvesArea";
-        shelvesArea.transform.position = shelvesAreaPosition + new Vector3(0, shelvesAreaSize.y/2, 0);
+        shelvesArea.transform.position = shelvesAreaPosition + new Vector3(0, 0, 0);
         shelvesArea.transform.localScale = shelvesAreaSize;
         shelvesArea.transform.parent = transform;
         

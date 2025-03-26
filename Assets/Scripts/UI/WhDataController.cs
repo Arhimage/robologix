@@ -3,10 +3,19 @@ using UnityEngine;
 using System.IO;
 using System.Xml.Serialization;
 using System;
+using System.Linq;
+using UnityEngine.UIElements;
 
 public static class WarehouseDataController
 {
     const string ConfigName = "ZoneDefinitions.xml";
+
+    public delegate void DataImpactEvent();
+
+    public static bool Loaded = false;
+
+    public static event DataImpactEvent DataLoaded;
+    public static event DataImpactEvent DataSaved;
 
     private static readonly WarehouseSettings baseSettings = new WarehouseSettings()
     {
@@ -83,6 +92,8 @@ public static class WarehouseDataController
             _settings = baseSettings;
             SaveZoneDefinitions();
         }
+        Loaded = true;
+        DataLoaded?.Invoke();
     }
 
     public static void SaveZoneDefinitions()
@@ -101,11 +112,43 @@ public static class WarehouseDataController
         {
             Debug.LogError("Ошибка при сохранении зон: " + e.Message);
         }
+        DataSaved?.Invoke();
     }
 }
 
-public class WhDataControllerWrapper : MonoBehaviour
+public class WhDataController : MonoBehaviour
 {
+    public void Awake()
+    {
+        if (WarehouseDataController.Loaded)
+            UpdateGeneration();
+        else
+            WarehouseDataController.DataLoaded += UpdateGeneration;
+    }
+
+    public RoomGenerator RG;
+    public ShelfGenerator SG;
+
+    public void UpdateGeneration()
+    {
+        if (RG != null && SG != null)
+        {
+            var whSize = WarehouseDataController.Settings.Warehouse.PhysicalSize;
+            RG.boxSize = new Vector3(whSize.x, 3, whSize.y);
+            var chargingArea = WarehouseDataController.Settings.Zones.First(z => z.Name == "Зона стоянки/зарядки");
+            var loadingArea = WarehouseDataController.Settings.Zones.First(z => z.Name == "Зона погрузки/разгрузки");
+            var shelvesArea = WarehouseDataController.Settings.Zones.First(z => z.Name == "Зона складирования");
+            RG.chargingAreaPosition = chargingArea.GetWorldPosition(whSize);
+            RG.chargingAreaSize = chargingArea.GetWorldSize();
+            RG.loadingAreaPosition = loadingArea.GetWorldPosition(whSize);
+            RG.loadingAreaSize = loadingArea.GetWorldSize();
+            RG.GenerateRoom();
+            SG.spawnAreaOffset = shelvesArea.GetWorldPosition(whSize);
+            SG.spawnAreaSize = shelvesArea.GetWorldSize();
+            SG.GenerateShelves();
+        }
+    }
+
     public static void OnButtonClick()
     {
         WarehouseDataController.SaveZoneDefinitions();

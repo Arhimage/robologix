@@ -10,7 +10,7 @@ public class ShelfGenerator : MonoBehaviour
     [Header("Параметры области")]
     [SerializeField] public Vector3 spawnAreaSize = new Vector3(10f, 2f, 10f);
     [SerializeField] public Vector3 spawnAreaOffset = Vector3.zero; // Новое свойство для смещения
-    [SerializeField] private bool spawnAlongX = true;
+    [SerializeField] public bool spawnAlongX = true;
     [SerializeField] private int floorCount = 2;
 
     [Header("Параметры полок")]
@@ -28,6 +28,7 @@ public class ShelfGenerator : MonoBehaviour
 
     public void GenerateShelves()
     {
+        Debug.Log("DT");
         // Создаем родительский объект для полок, если его нет
         if (shelveParent == null)
         {

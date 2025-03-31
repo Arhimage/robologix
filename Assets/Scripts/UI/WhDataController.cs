@@ -124,6 +124,8 @@ public class WhDataController : MonoBehaviour
             UpdateGeneration();
         else
             WarehouseDataController.DataLoaded += UpdateGeneration;
+
+        WarehouseDataController.DataSaved += UpdateGeneration;
     }
 
     public RoomGenerator RG;
@@ -137,7 +139,7 @@ public class WhDataController : MonoBehaviour
             RG.boxSize = new Vector3(whSize.x, 3, whSize.y);
             var chargingArea = WarehouseDataController.Settings.Zones.First(z => z.Name == "Зона стоянки/зарядки");
             var loadingArea = WarehouseDataController.Settings.Zones.First(z => z.Name == "Зона погрузки/разгрузки");
-            var shelvesArea = WarehouseDataController.Settings.Zones.First(z => z.Name == "Зона складирования");
+            var shelvesArea = WarehouseDataController.Settings.Zones.First(z => z.Name == "Зона складирования") as ZoneDirectional;
             RG.chargingAreaPosition = chargingArea.GetWorldPosition(whSize);
             RG.chargingAreaSize = chargingArea.GetWorldSize();
             RG.loadingAreaPosition = loadingArea.GetWorldPosition(whSize);
@@ -145,6 +147,7 @@ public class WhDataController : MonoBehaviour
             RG.GenerateRoom();
             SG.spawnAreaOffset = shelvesArea.GetWorldPosition(whSize);
             SG.spawnAreaSize = shelvesArea.GetWorldSize();
+            SG.spawnAlongX = !shelvesArea.IsVertical;
             SG.GenerateShelves();
         }
     }

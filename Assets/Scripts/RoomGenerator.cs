@@ -26,6 +26,7 @@ public class RoomGenerator : MonoBehaviour
     
     [Header("Vehicle")]
     public GameObject vehiclePrefab;
+    public Vector3 vehicleOffset;
     
     private GameObject chargingArea;
     private GameObject loadingArea;
@@ -218,7 +219,7 @@ public class RoomGenerator : MonoBehaviour
     {
         if (vehiclePrefab != null && chargingArea != null)
         {
-            GameObject vehicle = Instantiate(vehiclePrefab, chargingAreaPosition + new Vector3(0, 0.2f, 0), Quaternion.identity);
+            GameObject vehicle = Instantiate(vehiclePrefab, chargingAreaPosition + vehicleOffset, Quaternion.identity);
             vehicle.name = "Vehicle";
             vehicle.transform.parent = transform;
             generatedObjects.Add(vehicle);
